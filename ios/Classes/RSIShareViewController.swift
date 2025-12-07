@@ -285,10 +285,6 @@ open class RSIShareViewController: SLComposeServiceViewController {
 
         checkAndRedirect(index: index, content: content)
     }
-                saveAndRedirect()
-            }
-        }
-    }
 
     // Save shared media and redirect to host app
     private func saveAndRedirect(message: String? = nil) {
