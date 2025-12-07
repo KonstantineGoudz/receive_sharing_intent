@@ -7,7 +7,7 @@ public let kUserDefaultsKey = "ShareKey"
 public let kUserDefaultsMessageKey = "ShareMessageKey"
 public let kAppGroupIdKey = "AppGroupId"
 
-public class SwiftReceiveSharingIntentPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
+public class SwiftListenSharingIntentPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
     static let kMessagesChannel = "receive_sharing_intent/messages"
     static let kEventsChannelMedia = "receive_sharing_intent/events-media"
     
@@ -19,7 +19,7 @@ public class SwiftReceiveSharingIntentPlugin: NSObject, FlutterPlugin, FlutterSt
     // Singleton is required for calling functions directly from AppDelegate
     // - it is required if the developer is using also another library, which requires to call "application(_:open:options:)"
     // -> see Example app
-    public static let instance = SwiftReceiveSharingIntentPlugin()
+    public static let instance = SwiftListenSharingIntentPlugin()
     
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: kMessagesChannel, binaryMessenger: registrar.messenger())
@@ -231,9 +231,10 @@ public class SharedMediaFile: Codable {
 public enum SharedMediaType: String, Codable, CaseIterable {
     case image
     case video
+    case pdf
+    case file
     case text
 //     case audio
-    case file
     case url
 
     public var toUTTypeIdentifier: String {
@@ -249,6 +250,8 @@ public enum SharedMediaType: String, Codable, CaseIterable {
     //             return UTType.audio.identifier
             case .file:
                 return UTType.fileURL.identifier
+            case .pdf:
+                return UTType.pdf.identifier
             case .url:
                 return UTType.url.identifier
             }
@@ -264,6 +267,8 @@ public enum SharedMediaType: String, Codable, CaseIterable {
 //             return "public.audio"
         case .file:
             return "public.file-url"
+        case .pdf:
+            return "com.adobe.pdf"
         case .url:
             return "public.url"
         }

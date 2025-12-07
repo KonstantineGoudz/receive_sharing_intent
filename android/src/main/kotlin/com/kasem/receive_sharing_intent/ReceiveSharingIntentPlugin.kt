@@ -105,6 +105,19 @@ class ReceiveSharingIntentPlugin : FlutterPlugin, ActivityAware, MethodCallHandl
                 latestMedia = value
                 eventSinkMedia?.success(latestMedia?.toString())
             }
+
+            // Opening email contact
+            intent.scheme?.startsWith("mailto") == true &&
+                    intent.action == Intent.ACTION_SENDTO -> {
+                val value = JSONArray(
+                        listOf(JSONObject()
+                                .put("path", intent.data?.schemeSpecificPart)
+                                .put("type", MediaType.MAILTO.value))
+                )
+                if (initial) initialMedia = value
+                latestMedia = value
+                eventSinkMedia?.success(latestMedia?.toString())
+            }
         }
     }
 
@@ -126,9 +139,10 @@ class ReceiveSharingIntentPlugin : FlutterPlugin, ActivityAware, MethodCallHandl
             Intent.ACTION_SEND_MULTIPLE -> {
                 val uris = intent.parcelableArrayList<Uri>(Intent.EXTRA_STREAM)
                 val mimeTypes = intent.getStringArrayExtra(Intent.EXTRA_MIME_TYPES)
+                val text = intent.getStringExtra(Intent.EXTRA_TEXT)
 
                 uris?.mapIndexedNotNull { index, uri ->
-                    toJsonObject(uri, null, mimeTypes?.getOrNull(index))
+                    toJsonObject(uri, text, mimeTypes?.getOrNull(index))
                 }?.let { JSONArray(it) }
             }
 
@@ -139,7 +153,8 @@ class ReceiveSharingIntentPlugin : FlutterPlugin, ActivityAware, MethodCallHandl
     // content can only be uri or string
     private fun toJsonObject(uri: Uri?, text: String?, mimeType: String?): JSONObject? {
         val path = uri?.let { FileDirectory.getAbsolutePath(applicationContext, it) }
-        val mType = mimeType ?: path?.let { URLConnection.guessContentTypeFromName(path) }
+        val specifiedMimeType = text?.let { "text" } ?: mimeType
+        val mType = specifiedMimeType ?: path?.let { URLConnection.guessContentTypeFromName(path) }
         val type = MediaType.fromMimeType(mType)
         val (thumbnail, duration) = path?.let { getThumbnailAndDuration(path, type) }
                 ?: Pair(null, null)
@@ -149,6 +164,7 @@ class ReceiveSharingIntentPlugin : FlutterPlugin, ActivityAware, MethodCallHandl
                 .put("mimeType", mType)
                 .put("thumbnail", thumbnail)
                 .put("duration", duration)
+                .put("text", text)
     }
 
     // Get video thumbnail and duration.
@@ -169,14 +185,14 @@ class ReceiveSharingIntentPlugin : FlutterPlugin, ActivityAware, MethodCallHandl
     }
 
     enum class MediaType(val value: String) {
-        IMAGE("image"), VIDEO("video"), TEXT("text"), FILE("file"), URL("url");
+        IMAGE("image"), VIDEO("video"), TEXT("text"), FILE("file"), URL("url"), MAILTO("mailto");
 
         companion object {
             fun fromMimeType(mimeType: String?): MediaType {
                 return when {
                     mimeType?.startsWith("image") == true -> IMAGE
                     mimeType?.startsWith("video") == true -> VIDEO
-                    mimeType?.startsWith("text") == true -> TEXT
+                    mimeType?.equals("text") == true -> TEXT
                     else -> FILE
                 }
             }

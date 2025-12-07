@@ -1,3 +1,21 @@
+## 1.9.2
+
+* Rename iOS classes and pod (by @basit-h, thanks @danemadsen)
+
+## 1.9.1
+
+* Fix links in README and in the example. No code changes.
+
+## 1.9.0
+
+* Updated Gradle version for Android build (by @ravijadav812)
+* Fixed ios swift compile errors (by @ltOgt)
+* File path errors are logged instead of crashing (by @kreativityapps)
+* Handle `mailto` links (by @dab246)
+* In some Android apps (e.g. Strava), the text may be included in `EXTRA_TEXT`
+  when `ACTION_SEND_MULTIPLE` is used (by @hidea)
+* Added support for PDF files on iOS (by @Gibbo97)
+
 ## 1.8.1
 
 * Fixed sharing not working on iOS 18

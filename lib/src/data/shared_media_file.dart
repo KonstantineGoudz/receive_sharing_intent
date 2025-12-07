@@ -1,4 +1,4 @@
-part of receive_sharing_intent;
+part of listen_sharing_intent;
 
 class SharedMediaFile {
   /// Shared file path, url or the text
@@ -55,7 +55,9 @@ enum SharedMediaType {
   video('video'),
   text('text'),
   file('file'),
-  url('url');
+  pdf('pdf'),
+  url('url'),
+  mailto('mailto');
 
   final String value;
 
