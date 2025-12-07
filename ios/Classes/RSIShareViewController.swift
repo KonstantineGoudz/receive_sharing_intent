@@ -47,58 +47,153 @@ open class RSIShareViewController: SLComposeServiceViewController {
             if let contents = content.attachments {
                 for (index, attachment) in contents.enumerated() {
                     if let nsItemProvider = attachment as? NSItemProvider {
-                        for type in SharedMediaType.allCases {
-                            if nsItemProvider.hasItemConformingToTypeIdentifier(
-                                type.toUTTypeIdentifier)
-                            {
-                                nsItemProvider.loadItem(
-                                    forTypeIdentifier: type.toUTTypeIdentifier, options: nil
-                                ) { [weak self] (data, error: Error?) in
-                                    guard let self = self else { return }
-
-                                    if let error = error {
-                                        self.dismissWithError()
-                                        return
-                                    }
-
-                                    switch type {
-                                    case .text:
-                                        if let text = data as? String {
-                                            self.handleMedia(
-                                                forLiteral: text,
-                                                type: type,
-                                                index: index,
-                                                content: content)
-                                        }
-                                    case .url:
-                                        if let url = data as? URL {
-                                            self.handleMedia(
-                                                forLiteral: url.absoluteString,
-                                                type: type,
-                                                index: index,
-                                                content: content)
-                                        }
-                                    default:
-                                        if let url = data as? URL {
-                                            self.handleMedia(
-                                                forFile: url,
-                                                type: type,
-                                                index: index,
-                                                content: content)
-                                        } else if let image = data as? UIImage {
-                                            self.handleMedia(
-                                                forUIImage: image,
-                                                type: type,
-                                                index: index,
-                                                content: content)
-                                        }
-                                    }
-                                }
-                                break
-                            }
-                        }
+                        handleAttachment(nsItemProvider, index: index, content: content)
                     }
                 }
+            }
+        }
+    }
+
+    private func handleAttachment(_ nsItemProvider: NSItemProvider, index: Int, content: NSExtensionItem) {
+        // Check for image first (most common from Photos app)
+        if nsItemProvider.hasItemConformingToTypeIdentifier(SharedMediaType.image.toUTTypeIdentifier) {
+            nsItemProvider.loadItem(
+                forTypeIdentifier: SharedMediaType.image.toUTTypeIdentifier, options: nil
+            ) { [weak self] (data, error: Error?) in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    print("[RSI] Error loading image: \(error.localizedDescription)")
+                    self.checkAndRedirect(index: index, content: content)
+                    return
+                }
+                
+                if let url = data as? URL {
+                    self.handleMedia(forFile: url, type: .image, index: index, content: content)
+                } else if let image = data as? UIImage {
+                    self.handleMedia(forUIImage: image, type: .image, index: index, content: content)
+                } else {
+                    print("[RSI] Unknown image data type: \(String(describing: data))")
+                    self.checkAndRedirect(index: index, content: content)
+                }
+            }
+        }
+        // Check for video
+        else if nsItemProvider.hasItemConformingToTypeIdentifier(SharedMediaType.video.toUTTypeIdentifier) {
+            nsItemProvider.loadItem(
+                forTypeIdentifier: SharedMediaType.video.toUTTypeIdentifier, options: nil
+            ) { [weak self] (data, error: Error?) in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    print("[RSI] Error loading video: \(error.localizedDescription)")
+                    self.checkAndRedirect(index: index, content: content)
+                    return
+                }
+                
+                if let url = data as? URL {
+                    self.handleMedia(forFile: url, type: .video, index: index, content: content)
+                } else {
+                    print("[RSI] Unknown video data type: \(String(describing: data))")
+                    self.checkAndRedirect(index: index, content: content)
+                }
+            }
+        }
+        // Check for PDF
+        else if nsItemProvider.hasItemConformingToTypeIdentifier(SharedMediaType.pdf.toUTTypeIdentifier) {
+            nsItemProvider.loadItem(
+                forTypeIdentifier: SharedMediaType.pdf.toUTTypeIdentifier, options: nil
+            ) { [weak self] (data, error: Error?) in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    print("[RSI] Error loading pdf: \(error.localizedDescription)")
+                    self.checkAndRedirect(index: index, content: content)
+                    return
+                }
+                
+                if let url = data as? URL {
+                    self.handleMedia(forFile: url, type: .pdf, index: index, content: content)
+                } else {
+                    print("[RSI] Unknown pdf data type: \(String(describing: data))")
+                    self.checkAndRedirect(index: index, content: content)
+                }
+            }
+        }
+        // Check for URL
+        else if nsItemProvider.hasItemConformingToTypeIdentifier(SharedMediaType.url.toUTTypeIdentifier) {
+            nsItemProvider.loadItem(
+                forTypeIdentifier: SharedMediaType.url.toUTTypeIdentifier, options: nil
+            ) { [weak self] (data, error: Error?) in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    print("[RSI] Error loading url: \(error.localizedDescription)")
+                    self.checkAndRedirect(index: index, content: content)
+                    return
+                }
+                
+                if let url = data as? URL {
+                    self.handleMedia(forLiteral: url.absoluteString, type: .url, index: index, content: content)
+                } else {
+                    print("[RSI] Unknown url data type: \(String(describing: data))")
+                    self.checkAndRedirect(index: index, content: content)
+                }
+            }
+        }
+        // Check for text
+        else if nsItemProvider.hasItemConformingToTypeIdentifier(SharedMediaType.text.toUTTypeIdentifier) {
+            nsItemProvider.loadItem(
+                forTypeIdentifier: SharedMediaType.text.toUTTypeIdentifier, options: nil
+            ) { [weak self] (data, error: Error?) in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    print("[RSI] Error loading text: \(error.localizedDescription)")
+                    self.checkAndRedirect(index: index, content: content)
+                    return
+                }
+                
+                if let text = data as? String {
+                    self.handleMedia(forLiteral: text, type: .text, index: index, content: content)
+                } else {
+                    print("[RSI] Unknown text data type: \(String(describing: data))")
+                    self.checkAndRedirect(index: index, content: content)
+                }
+            }
+        }
+        // Check for file
+        else if nsItemProvider.hasItemConformingToTypeIdentifier(SharedMediaType.file.toUTTypeIdentifier) {
+            nsItemProvider.loadItem(
+                forTypeIdentifier: SharedMediaType.file.toUTTypeIdentifier, options: nil
+            ) { [weak self] (data, error: Error?) in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    print("[RSI] Error loading file: \(error.localizedDescription)")
+                    self.checkAndRedirect(index: index, content: content)
+                    return
+                }
+                
+                if let url = data as? URL {
+                    self.handleMedia(forFile: url, type: .file, index: index, content: content)
+                } else {
+                    print("[RSI] Unknown file data type: \(String(describing: data))")
+                    self.checkAndRedirect(index: index, content: content)
+                }
+            }
+        }
+        else {
+            print("[RSI] No matching type identifier found for attachment")
+            self.checkAndRedirect(index: index, content: content)
+        }
+    }
+
+    private func checkAndRedirect(index: Int, content: NSExtensionItem) {
+        // Check if this is the last attachment
+        if index == (content.attachments?.count ?? 0) - 1 {
+            if shouldAutoRedirect() {
+                saveAndRedirect()
             }
         }
     }
@@ -134,11 +229,7 @@ open class RSIShareViewController: SLComposeServiceViewController {
                 mimeType: type == .text ? "text/plain" : nil,
                 type: type
             ))
-        if index == (content.attachments?.count ?? 0) - 1 {
-            if shouldAutoRedirect() {
-                saveAndRedirect()
-            }
-        }
+        checkAndRedirect(index: index, content: content)
     }
 
     private func handleMedia(
@@ -156,11 +247,7 @@ open class RSIShareViewController: SLComposeServiceViewController {
                     type: type
                 ))
         }
-        if index == (content.attachments?.count ?? 0) - 1 {
-            if shouldAutoRedirect() {
-                saveAndRedirect()
-            }
-        }
+        checkAndRedirect(index: index, content: content)
     }
 
     private func handleMedia(
@@ -196,8 +283,8 @@ open class RSIShareViewController: SLComposeServiceViewController {
             }
         }
 
-        if index == (content.attachments?.count ?? 0) - 1 {
-            if shouldAutoRedirect() {
+        checkAndRedirect(index: index, content: content)
+    }
                 saveAndRedirect()
             }
         }
